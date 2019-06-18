@@ -41,17 +41,21 @@ defaultHandles =
     , Handler $ \(_ :: PatternMatchFail) -> return Nothing
     , Handler $ \(x :: SomeException)    -> throwIO x ]
 
--- | Evaluate a value to normal form and return Nothing if any exceptions are thrown during evaluation. For any error-free value, @spoon = Just@.
+-- | Evaluate a value to normal form, catching exceptions using the
+-- given handlers. Return 'Nothing' if any unhandled exceptions are thrown
+-- during evaluation. For any error-free value, @spoonWithHandles hs = Just@.
 {-# INLINEABLE spoonWithHandles #-}
 spoonWithHandles :: NFData a => Handles a -> a -> Maybe a
 spoonWithHandles handles a = unsafePerformIO $
-    deepseq a (Just `fmap` return a) `catches` handles
+    (Just a <$ evaluate (rnf a)) `catches` handles
 
--- | Evaluate a value to normal form and return Nothing if any exceptions are thrown during evaluation. For any error-free value, @spoon = Just@.
+-- | Evaluate a value to normal form and return 'Nothing' if any exceptions
+-- are thrown during evaluation. For any error-free value, @spoon = Just@.
 {-# INLINE spoon #-}
 spoon :: NFData a => a -> Maybe a
 spoon = spoonWithHandles defaultHandles
 
+-- | Like 'spoonWithHandles', but only evaluates to WHNF.
 {-# INLINEABLE teaspoonWithHandles #-}
 teaspoonWithHandles :: Handles a -> a -> Maybe a
 teaspoonWithHandles handles a = unsafePerformIO $
